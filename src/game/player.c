@@ -114,6 +114,21 @@ s32 getPlayerCount(void)
     return count;
 }
 
+#ifdef PORT
+/* Set by bossMainloop when a solo mission is loaded with extra players
+ * (co-op story). Those players need split-screen, but the stage must keep
+ * its solo setup, props and rules. */
+s32 g_CoopMode = 0;
+
+/* True for a real multiplayer match: several players and not co-op. Use
+ * this instead of getPlayerCount() >= 2 where the check picks MP content
+ * or rules rather than split-screen rendering. */
+s32 isMpMatch(void)
+{
+    return getPlayerCount() >= 2 && !g_CoopMode;
+}
+#endif
+
 void initBONDdataforPlayer(s32 player_num)
 {
     s32 i;

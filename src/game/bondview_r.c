@@ -473,7 +473,11 @@ void bondviewLoadSetupIntroSection(void)
 
     if (startpadcount > 0)
     {
+#ifdef PORT
+        if (isMpMatch() && (startpadcount > 0))
+#else
         if ((getPlayerCount() >= 2) && (startpadcount > 0))
+#endif
         {
             rand_pad_index = bondviewGetRandomSpawnPadIndex();
         }
@@ -496,6 +500,42 @@ void bondviewLoadSetupIntroSection(void)
         start_pos.f[1] = g_CurrentPlayer->eyeheight + stan_height;
         g_CurrentPlayer->field_70 = stan_height;
         start_look_angle = M_TAU_F - atan2f(g_Startpad[rand_pad_index]->look.f[0], g_Startpad[rand_pad_index]->look.f[2]);
+
+#ifdef PORT
+        /* Co-op: solo stages have one start pad, so every player would spawn
+         * inside player 1. Move the others beside or behind it, keeping the
+         * first spot the floor reaches from the pad (no walls or drops). */
+        if (g_CoopMode && get_cur_playernum() > 0)
+        {
+            static const f32 offsets[][2] = { /* {right, forward} */
+                { 120.0f, 0.0f }, { -120.0f, 0.0f }, { 0.0f, -120.0f },
+                { 120.0f, -120.0f }, { -120.0f, -120.0f }, { 0.0f, -240.0f },
+            };
+            f32 fwd_x = -sinf(start_look_angle);
+            f32 fwd_z = cosf(start_look_angle);
+            s32 n;
+
+            for (n = 0; n < ARRAYCOUNT(offsets); n++)
+            {
+                s32 k = (n + get_cur_playernum() - 1) % ARRAYCOUNT(offsets);
+                f32 x = start_pos.f[0] + offsets[k][0] * fwd_z + offsets[k][1] * fwd_x;
+                f32 z = start_pos.f[2] - offsets[k][0] * fwd_x + offsets[k][1] * fwd_z;
+                StandTile *tile = start_stan;
+
+                if (walkTilesBetweenPoints_NoCallback(&tile, start_pos.f[0], start_pos.f[2], x, z) && tile)
+                {
+                    start_pos.f[0] = x;
+                    start_pos.f[2] = z;
+                    start_stan = tile;
+                    stan_height = bondviewYPositionRelated(start_stan, x, z);
+                    start_pos.f[1] = g_CurrentPlayer->eyeheight + stan_height;
+                    g_CurrentPlayer->field_70 = stan_height;
+                    osSyncPrintf("GE_COOP: player %d spawns at offset %d\n", get_cur_playernum() + 1, k);
+                    break;
+                }
+            }
+        }
+#endif
     }
     else
     {

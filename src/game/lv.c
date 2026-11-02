@@ -525,7 +525,11 @@ void lvlStageLoad(s32 stage)
             s32 s3;
             player_data = (struct player_data *)&g_playerPlayerData[i];
 
+            #ifdef PORT
+            if (getPlayerCount() == 1 || g_CoopMode)
+            #else
             if (getPlayerCount() == 1)
+            #endif
             {
                 // s4 variable
                 player_data->autoaim = 0;
@@ -1099,6 +1103,19 @@ void lvlManageMpGame(void)
         extern void d318WatchdogTick(void);
         d318WatchdogTick(); /* D318/D320 pin detector, log-only since D329 (findings D318) */
     }
+    /* Co-op debugging: log every player's state about once a second. */
+    if (g_CoopMode && (g_GlobalTimer / 60) != ((g_GlobalTimer - g_ClockTimer) / 60))
+    {
+        s32 i;
+        for (i = 0; i < getPlayerCount(); i++)
+        {
+            struct player *pl = g_playerPointers[i];
+            osSyncPrintf("GE_COOP t=%d p%d pos=%.0f,%.0f,%.0f health=%.2f dead=%d cam=%d theta=%.0f verta=%.0f\n",
+                (int)g_GlobalTimer, i + 1,
+                pl->prop ? pl->prop->pos.x : 0.0f, pl->prop ? pl->prop->pos.y : 0.0f, pl->prop ? pl->prop->pos.z : 0.0f,
+                pl->bondhealth, (int)pl->bonddead, (int)pl->cameramode, pl->vv_theta, pl->vv_verta);
+        }
+    }
 #endif
     if ((g_CurrentStageToLoad != LEVELID_TITLE) && (D_80048394 == 0) && (g_ClockTimer > 0))
     {
@@ -1115,7 +1132,11 @@ void lvlManageMpGame(void)
         }
     }
 
+#ifdef PORT
+    if (isMpMatch() && (g_CurrentStageToLoad != LEVELID_TITLE))
+#else
     if ((getPlayerCount() >= 2) && (g_CurrentStageToLoad != LEVELID_TITLE))
+#endif
     {
         if (get_mission_state() == MISSION_STATE_6)
         {

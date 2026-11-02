@@ -526,6 +526,9 @@ void bossMainloop(void)
 #endif
 
         localSelectedNumPlayers = 0;
+#ifdef PORT
+        g_CoopMode = 0;
+#endif
         if (g_StageNum != LEVELID_TITLE)
         {
             localSelectedNumPlayers = 1;
@@ -533,6 +536,17 @@ void bossMainloop(void)
             {
                 localSelectedNumPlayers = get_selected_num_players();
             }
+#ifdef PORT
+            /* Co-op story prototype (phase 1): GE_COOP=1 loads solo missions
+             * with a second player so we can see which solo-only systems
+             * break. Not used without the env var. */
+            else if (gamemode == GAMEMODE_SOLO && getenv("GE_COOP") && atoi(getenv("GE_COOP")) > 0)
+            {
+                localSelectedNumPlayers = 2;
+                g_CoopMode = 1;
+                osSyncPrintf("GE_COOP: stage %d loading with 2 players\n", g_StageNum);
+            }
+#endif
         }
 
         init_player_data_ptrs_construct_viewports(localSelectedNumPlayers);
