@@ -6159,6 +6159,14 @@ Gfx * constructor_menu12_mpstage(Gfx *DL)
 
 MPSCENARIOS get_scenario(void)
 {
+#ifdef PORT
+  /* Co-op story missions are not a match: ignore the multiplayer scenario
+   * left from the MP menu (License to Kill made every guard shot lethal). */
+  if (g_CoopMode)
+  {
+    return SCENARIO_NORMAL;
+  }
+#endif
   return scenario;
 }
 
