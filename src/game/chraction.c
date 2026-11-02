@@ -9677,7 +9677,7 @@ void chrlvActionTick(ChrRecord *self)
 {
     s32 saved;
 
-    if (g_CoopMode)
+    if (g_CoopMode && self->prop != NULL && self->prop->type == PROP_TYPE_CHR)   /* guards, not player bodies */
     {
         if (g_CoopWatchChr < 0)
         {

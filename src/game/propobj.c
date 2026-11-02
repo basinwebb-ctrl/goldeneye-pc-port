@@ -4480,7 +4480,10 @@ s32 objTick(struct PropRecord *prop)
 			projectile = obj->projectile;
 
 			if (projectile->ownerprop != NULL
-#if defined(VERSION_JP) || defined(VERSION_EU)
+#if defined(VERSION_JP) || defined(VERSION_EU) || defined(PORT)
+				/* PORT: also needed for co-op, where guards drop their guns
+				 * as projectiles; a guard owner is no player, so without this
+				 * no player's pass moves the gun and it hangs in the air. */
 				&& getPlayerPointerIndex(projectile->ownerprop) >= 0
 #endif
 			)
