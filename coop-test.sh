@@ -48,6 +48,7 @@ rm -rf ppm
   echo "level=$LEVEL seconds=$waited still_running=$alive screenshots=$frames"
   grep -m1 'GE_COOP' "$OUT/game.log" || echo "GE_COOP line: MISSING (switch not active?)"
   grep -m3 -E 'D416 split|spawns at' "$OUT/game.log"
+  echo "guard target switches: $(grep -c 'now targets player' "$OUT/game.log")"
   grep -E 'GE_COOP t=' "$OUT/game.log" | head -2
   grep -E 'GE_COOP t=' "$OUT/game.log" | tail -2
   if [ -f ge007.crash.log ]; then

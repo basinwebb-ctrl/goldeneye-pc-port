@@ -7,6 +7,7 @@
 #include "PR/os.h"
 #include "str.h"
 #include "bondview.h"
+#include "bondinv.h"
 #ifdef PORT
 #include <stdlib.h>
 /* set by bossReturnTitleStage so the (per-frame-polled) objective logs only
@@ -220,7 +221,11 @@ OBJECTIVESTATUS get_status_of_objective(s32 objectiveNum) //#MATCH
                             {
                                 currentstatus = OBJECTIVESTATUS_FAILED;
                             }
+#ifdef PORT
+                            else if (!bondinvAnyPlayerHasPropInInv(obj->prop))
+#else
                             else if (!bondinvHasPropInInv(obj->prop))
+#endif
                             {
                                 currentstatus = OBJECTIVESTATUS_INCOMPLETE;
                             }
@@ -229,7 +234,11 @@ OBJECTIVESTATUS get_status_of_objective(s32 objectiveNum) //#MATCH
                         case PROPDEF_OBJECTIVE_DEPOSIT_OBJECT:
                         {
                             ObjectRecord *obj = objFindByTagId(objective->ObjRefID);
+#ifdef PORT
+                            if (obj && obj->prop && bondinvAnyPlayerHasPropInInv(obj->prop))
+#else
                             if (obj && obj->prop && bondinvHasPropInInv(obj->prop))
+#endif
                             {
                                 currentstatus = OBJECTIVESTATUS_INCOMPLETE;
                             }

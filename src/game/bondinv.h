@@ -21,6 +21,9 @@ int bondinvAddDoublesInvItem(ITEM_IDS right, ITEM_IDS left);
 s32 bondinvGetAllGunsFlag(void);
 void bondinvSetAllGunsFlag(s32 all_guns);
 bool          bondinvHasPropInInv(PropRecord *prop);
+#ifdef PORT
+bool          bondinvAnyPlayerHasPropInInv(PropRecord *prop);
+#endif
 WeaponObjRecord *bondinvRemovePropWeaponByID(ITEM_IDS weaponnum);
 void bondinvRemoveItemByID(ITEM_IDS weaponnum);
 s32 bondinvGetWeaponOfChoice(s32 *weapon1, s32 *weapon2);

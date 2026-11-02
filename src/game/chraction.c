@@ -9488,7 +9488,11 @@ void chrlvTickPatrol(ChrRecord *self)
 /**
  * Address 0x7F0326BC.
 */
+#ifdef PORT
+static void chrlvActionTickBody(ChrRecord *self)
+#else
 void chrlvActionTick(ChrRecord *self)
+#endif
 {
     if (g_ClockTimer > 0)
     {
@@ -9588,6 +9592,87 @@ void chrlvActionTick(ChrRecord *self)
         }
     }
 }
+
+#ifdef PORT
+/* Co-op: guard code aims at "the current player" (getCurrentPlayerProp,
+ * g_CurrentPlayer), which is player 1 while guards tick. Point each guard at
+ * the nearest living player for its tick, then put the current player back.
+ * A guard keeps its last target unless the other player is clearly closer,
+ * so it does not flip between two players standing side by side. */
+static u8 s_CoopChrTarget[512];
+
+static s32 coopPickTargetPlayer(ChrRecord *self)
+{
+    s32 slot = self->chrnum & 511;
+    s32 prev = s_CoopChrTarget[slot];
+    s32 best = -1;
+    f32 bestdist = 0.0f;
+    f32 prevdist = -1.0f;
+    s32 i;
+
+    for (i = 0; i < getPlayerCount(); i++)
+    {
+        struct player *pl = g_playerPointers[i];
+        f32 dx, dy, dz, dist;
+
+        if (pl == NULL || pl->prop == NULL || pl->bonddead)
+        {
+            continue;
+        }
+
+        dx = pl->prop->pos.x - self->prop->pos.x;
+        dy = pl->prop->pos.y - self->prop->pos.y;
+        dz = pl->prop->pos.z - self->prop->pos.z;
+        dist = dx * dx + dy * dy + dz * dz;
+
+        if (i == prev)
+        {
+            prevdist = dist;
+        }
+
+        if (best < 0 || dist < bestdist)
+        {
+            best = i;
+            bestdist = dist;
+        }
+    }
+
+    if (best < 0)
+    {
+        return prev < getPlayerCount() ? prev : 0;   /* everyone is down */
+    }
+
+    /* switch only when the new player is under ~75% of the old distance */
+    if (prevdist >= 0.0f && best != prev && bestdist > prevdist * 0.56f)
+    {
+        best = prev;
+    }
+
+    if (best != prev)
+    {
+        osSyncPrintf("GE_COOP: guard %d now targets player %d\n", (int)self->chrnum, (int)best + 1);
+    }
+
+    s_CoopChrTarget[slot] = best;
+    return best;
+}
+
+void chrlvActionTick(ChrRecord *self)
+{
+    s32 saved;
+
+    if (!g_CoopMode || self->prop == NULL || getPlayerCount() < 2)
+    {
+        chrlvActionTickBody(self);
+        return;
+    }
+
+    saved = get_cur_playernum();
+    set_cur_player(coopPickTargetPlayer(self));
+    chrlvActionTickBody(self);
+    set_cur_player(saved);
+}
+#endif
 
 
 /**

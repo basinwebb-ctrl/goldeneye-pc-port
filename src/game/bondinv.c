@@ -843,6 +843,33 @@ bool bondinvHasPropInInv(PropRecord *prop)
     return FALSE;
 }
 
+#ifdef PORT
+/* Co-op: mission items count for the team, so check every player's
+ * inventory. Same as bondinvHasPropInInv outside co-op. */
+bool bondinvAnyPlayerHasPropInInv(PropRecord *prop)
+{
+    s32 saved;
+    s32 i;
+    bool found = FALSE;
+
+    if (!g_CoopMode)
+    {
+        return bondinvHasPropInInv(prop);
+    }
+
+    saved = get_cur_playernum();
+
+    for (i = 0; i < getPlayerCount() && !found; i++)
+    {
+        set_cur_player(i);
+        found = bondinvHasPropInInv(prop);
+    }
+
+    set_cur_player(saved);
+    return found;
+}
+#endif
+
 s32 bondinvCountTotalItemsInInv(void)
 {
     InvItem *item;
