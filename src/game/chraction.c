@@ -2437,7 +2437,11 @@ void play_sound_for_shot_actor(ChrRecord *self)
 
     if (self->prop->type == PROP_TYPE_VIEWER)
     {
+#ifdef PORT
+        if (isSoloRules())
+#else
         if (getPlayerCount() == 1)
+#endif
         {
             if (c_item_entries[self->bodynum].isMale != FALSE)
             {
@@ -2511,6 +2515,21 @@ bool handles_shot_actors(ChrRecord *self, s32 hitpart, coord3d *vector, s32 weap
     s32 hattype;                     //sp78
     PropRecord *myprop = self->prop; //sp60
     s32 padd;
+
+#ifdef PORT
+    /* Co-op debugging: which player hit a guard (every player-shot path
+     * lands here, from the shooter's own tick), and what shot a player. */
+    if (g_CoopMode && isPlayer && myprop && myprop->type == PROP_TYPE_CHR)
+    {
+        osSyncPrintf("GE_COOP: player %d hit guard %d\n", get_cur_playernum() + 1, (int)self->chrnum);
+    }
+    if (g_CoopMode && myprop && myprop->type == PROP_TYPE_VIEWER)
+    {
+        osSyncPrintf("GE_COOP: player %d shot: weapon %d part %d byplayer %d from %p\n",
+                     (int)getPlayerPointerIndex(myprop) + 1, (int)weaponid, (int)hitpart, (int)isPlayer,
+                     __builtin_return_address(0));
+    }
+#endif
 
     // Handle hat shots.
     if (hitpart == HIT_HAT && self->handle_positiondata_hat)
@@ -10034,6 +10053,19 @@ ChrRecord *chrFindById(ChrRecord *self, s32 guard_id)
             }
         }
     }
+
+#ifdef PORT
+    /* Co-op: in solo, Bond only has a chr during cutscenes, so stage scripts
+     * can never reach him in play. Co-op players always have one (each is
+     * drawn in the other's view), and IDs held by scripts (seen-shot,
+     * preset...) could land on it: Jungle's script shot player 1 dead at the
+     * start. Keep players out of script lookups except in the exit cutscene. */
+    if (g_CoopMode && guard && guard->prop && guard->prop->type == PROP_TYPE_VIEWER
+        && g_CameraMode != CAMERAMODE_POSEND)
+    {
+        return NULL;
+    }
+#endif
 
     return guard;
 }

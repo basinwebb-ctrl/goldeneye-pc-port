@@ -2286,6 +2286,12 @@ void propsTickPlayer(void)
             }
             propprev = prop->prev; //not sure why rare put this here and not in the for statement
 
+#ifdef PORT
+            if (g_CoopMode && (isCollected == TICKOP_FREE || isCollected == TICKOP_GIVETOPLAYER))
+            {
+                osSyncPrintf("GE_COOP: player %d picked something up\n", get_cur_playernum() + 1);
+            }
+#endif
             propExecuteTickOperation(prop, isCollected);
         }
     }

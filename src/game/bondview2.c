@@ -394,7 +394,11 @@ void solo_char_load(void)
 
         bondviewDeregisterPlayerRoom(g_CurrentPlayer);
 
+#ifdef PORT
+        if (isSoloRules())
+#else
         if (getPlayerCount() == 1)
+#endif
         {
             helddst = fileGetBondForCurrentFolder();
             switch (g_CurrentPlayer->bondtype)
@@ -9730,6 +9734,14 @@ s32 sub_GAME_7F0898E8(void)
  */
 void record_damage_kills(f32 damage_amount, f32 vectorx, f32 vectorz, s32 playerid, s32 affects_armor) {
     f32 damage_dealt = g_playerPerm->handicap * damage_amount;
+#ifdef PORT
+    /* Co-op debugging: who hurt which player (caller resolves with addr2line). */
+    if (g_CoopMode)
+    {
+        osSyncPrintf("GE_COOP: player %d damaged %.3f (health %.2f) by %p\n", get_cur_playernum() + 1,
+                     damage_dealt, g_CurrentPlayer->bondhealth, __builtin_return_address(0));
+    }
+#endif
     s32 cur_player_num;
     f32 angle;
     s32 padding;

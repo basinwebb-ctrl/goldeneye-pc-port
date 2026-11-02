@@ -79,7 +79,8 @@ u32 weaponLoadProjectileModels(ITEM_IDS modelid)
 #ifdef PORT
 /* Co-op: find a free spot about one stride beside (or behind) a point that
  * faces look_angle, reachable over the floor from it (no walls or drops).
- * `seed` rotates which offset is tried first so several players spread out.
+ * `seed` rotates which of the first six (roomy) offsets is tried first so
+ * several players spread out; the tight-space ones are always tried last.
  * Returns FALSE when no offset works. */
 s32 coopFindSpotBeside(f32 base_x, f32 base_z, StandTile *base_tile, f32 look_angle, s32 seed,
                        f32 *out_x, f32 *out_z, StandTile **out_tile)
@@ -87,6 +88,9 @@ s32 coopFindSpotBeside(f32 base_x, f32 base_z, StandTile *base_tile, f32 look_an
     static const f32 offsets[][2] = { /* {right, forward} */
         { 120.0f, 0.0f }, { -120.0f, 0.0f }, { 0.0f, -120.0f },
         { 120.0f, -120.0f }, { -120.0f, -120.0f }, { 0.0f, -240.0f },
+        /* tight starts (vents, corridors): ahead, then closer in */
+        { 0.0f, 120.0f }, { 0.0f, 240.0f },
+        { 70.0f, 0.0f }, { -70.0f, 0.0f }, { 0.0f, -70.0f }, { 0.0f, 70.0f },
     };
     f32 fwd_x = -sinf(look_angle);
     f32 fwd_z = cosf(look_angle);
@@ -99,7 +103,7 @@ s32 coopFindSpotBeside(f32 base_x, f32 base_z, StandTile *base_tile, f32 look_an
 
     for (n = 0; n < ARRAYCOUNT(offsets); n++)
     {
-        s32 k = (n + seed) % ARRAYCOUNT(offsets);
+        s32 k = n < 6 ? (n + seed) % 6 : n;
         f32 x = base_x + offsets[k][0] * fwd_z + offsets[k][1] * fwd_x;
         f32 z = base_z - offsets[k][0] * fwd_x + offsets[k][1] * fwd_z;
         StandTile *tile = base_tile;

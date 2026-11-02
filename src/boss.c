@@ -540,6 +540,7 @@ void bossMainloop(void)
             /* Co-op story: "Co-op Missions" in the mode-select menu (or
              * GE_COOP=1) loads solo missions with a second player. */
             else if (gamemode == GAMEMODE_SOLO
+                     && g_StageNum != LEVELID_CUBA   /* the end credits, not a mission */
                      && (g_CoopRequested || (getenv("GE_COOP") && atoi(getenv("GE_COOP")) > 0)))
             {
                 localSelectedNumPlayers = 2;

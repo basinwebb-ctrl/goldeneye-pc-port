@@ -20,11 +20,12 @@ pkill -x ge007.aarch64 2>/dev/null; sleep 1
 
 # Player 2 walks forward. This port runs the "natural look" control style,
 # where the analog stick looks and D-pad/C-up walks, so hold D-pad up by
-# re-pulsing it (button tokens last 6 reads; 64 entries max). Later it
-# taps fire (Z), which also rejoins after being knocked out.
-P2SCRIPT=$( { seq 200 6 398 | sed 's/$/:UP/'; seq 1000 20 1580 | sed 's/$/:Z/'; } | paste -sd';')
-# Death rules: knock out player 2, let it rejoin, then knock out both.
-KILL=${COOP_KILL-2@700,1@2400,2@2400}
+# re-pulsing it (button tokens last 6 reads; 64 entries max). Then it
+# fires (Z) at the guards that come for it, and walks on over what they drop.
+P2SCRIPT=$( { seq 200 6 338 | sed 's/$/:UP/'; seq 700 20 1100 | sed 's/$/:Z/'; seq 1200 6 1308 | sed 's/$/:UP/'; } | paste -sd';')
+# Death rules test (knock out player 2, rejoin, then both):
+#   COOP_KILL=2@700,1@2400,2@2400 ./coop-test.sh
+KILL=${COOP_KILL-}
 
 echo "=== Running level $LEVEL with 2 players (up to ${SECS}s) ==="
 MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 \
@@ -53,6 +54,8 @@ rm -rf ppm
   grep -m3 -E 'D416 split|spawns' "$OUT/game.log"
   grep -E 'knocks out|rejoins|all players down' "$OUT/game.log"
   echo "guard speed (ticks per frame, should be about 1): $(grep -E 'guard -?[0-9]+ ticks=' "$OUT/game.log" | sed -n '5,$p' | awk -F'ticks=| frames=' '{t+=$2; f+=$3} END {if (f) printf "%.2f", t/f; else print "n/a"}')"
+  echo "pickups: player 1 = $(grep -c 'player 1 picked' "$OUT/game.log"), player 2 = $(grep -c 'player 2 picked' "$OUT/game.log")"
+  echo "guard hits: player 1 = $(grep -c 'player 1 hit guard' "$OUT/game.log"), player 2 = $(grep -c 'player 2 hit guard' "$OUT/game.log")"
   echo "guard target switches: $(grep -c 'now targets player' "$OUT/game.log")"
   grep -E 'GE_COOP t=' "$OUT/game.log" | head -2
   grep -E 'GE_COOP t=' "$OUT/game.log" | tail -2
