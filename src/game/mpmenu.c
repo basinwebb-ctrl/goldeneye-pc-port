@@ -743,7 +743,11 @@ void mpwatchMenuTick(void)
                 return;
             }
 
-            if (joyGetButtonsPressedThisFrame(player_num, START_BUTTON))
+            if (joyGetButtonsPressedThisFrame(player_num, START_BUTTON)
+#ifdef PORT
+                && !g_CoopMode   /* co-op: Start opens Bond's watch instead */
+#endif
+                )
             {
                 mpwatchPlayBeep();
                 g_CurrentPlayer->mpmenuon = TRUE;

@@ -4984,7 +4984,11 @@ void bondviewProcessInput(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
             (g_CurrentPlayer->watch_animation_state == WATCH_ANIMATION_0x5
                 && g_CurrentPlayer->open_close_solo_watch_menu)
         )
+#ifdef PORT
+        && isSoloRules())   /* co-op: Start opens Bond's watch, not the MP menu */
+#else
         && (getPlayerCount() == 1))
+#endif
     {
         trigger_solo_watch_menu(0);
     }
@@ -4992,7 +4996,11 @@ void bondviewProcessInput(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
     if (g_CurrentPlayer->watch_animation_state == WATCH_ANIMATION_0x0
         && g_CurrentPlayer->bonddead == FALSE
         && (
+#ifdef PORT
+            isSoloRules()
+#else
             getPlayerCount() == 1
+#endif
             || (
                 g_stopPlayFlag == 0
                 && g_gameOverFlag == 0)))

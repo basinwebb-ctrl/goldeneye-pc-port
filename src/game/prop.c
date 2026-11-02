@@ -1627,6 +1627,13 @@ void proplvreset2(enum LEVELID stageId)
         }
 
         modelmgrAllocateModelSlots(numObjects);
+#ifdef PORT
+        /* Co-op: room for the players' always-present body models too. */
+        if (g_CoopMode)
+        {
+            numAnimatedObjects += getPlayerCount();
+        }
+#endif
         modelmgrAllocateAnimModelSlots(numAnimatedObjects);
 
         for (i8 = 0; i8 < getPlayerCount(); i8++)

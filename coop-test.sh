@@ -21,8 +21,9 @@ pkill -x ge007.aarch64 2>/dev/null; sleep 1
 # Player 2 walks forward. This port runs the "natural look" control style,
 # where the analog stick looks and D-pad/C-up walks, so hold D-pad up by
 # re-pulsing it (button tokens last 6 reads; 64 entries max). Then it
-# fires (Z) at the guards that come for it, and walks on over what they drop.
-P2SCRIPT=$( { seq 200 6 338 | sed 's/$/:UP/'; seq 700 20 1100 | sed 's/$/:Z/'; seq 1200 6 1308 | sed 's/$/:UP/'; } | paste -sd';')
+# fires (Z) at the guards that come for it, walks on over what they drop,
+# and finally presses Start, which should open Bond's watch (bottom view).
+P2SCRIPT=$( { seq 200 6 338 | sed 's/$/:UP/'; seq 700 20 1100 | sed 's/$/:Z/'; seq 1200 6 1302 | sed 's/$/:UP/'; echo 1400:START; } | paste -sd';')
 # Death rules test (knock out player 2, rejoin, then both):
 #   COOP_KILL=2@700,1@2400,2@2400 ./coop-test.sh
 KILL=${COOP_KILL-}

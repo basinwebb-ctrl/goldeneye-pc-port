@@ -237,7 +237,13 @@ void init_player_BONDdata_stats(void)
 
     g_CurrentPlayer->ptr_hand_weapon_buffer[GUNRIGHT] = mempAllocBytesInBank(size_item_buffer[0], MEMPOOL_STAGE);
 
+#ifdef PORT
+    /* Co-op: Start opens Bond's watch, which loads into the left-hand
+     * buffer; MP never allocated one, so opening it wrote through NULL. */
+    if (isSoloRules())
+#else
     if (getPlayerCount() == 1)
+#endif
     {
         g_CurrentPlayer->ptr_hand_weapon_buffer[GUNLEFT] = mempAllocBytesInBank(size_item_buffer[1], MEMPOOL_STAGE);
     }

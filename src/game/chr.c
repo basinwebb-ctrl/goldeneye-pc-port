@@ -2473,6 +2473,7 @@ s32 chrTick(PropRecord *prop)
     s32 tickamount;
 #ifdef PORT
     s32 simowner;
+    coord3d savedprevpos;
 #endif
 
     renderdata = D_8002CC6C;
@@ -2492,6 +2493,10 @@ s32 chrTick(PropRecord *prop)
     if (!simowner)
     {
         tickamount = 0;
+        /* chrUpdateAnim below copies the current position into prevpos; the
+         * guard's next action tick uses prevpos to see whether it arrived at
+         * a waypoint, so a draw-only pass must leave it alone. */
+        savedprevpos = chr->prevpos;
     }
 #endif
 
@@ -2548,6 +2553,14 @@ s32 chrTick(PropRecord *prop)
 
     if (chr->hidden & CHRHIDDEN_REMOVE)
     {
+#ifdef PORT
+        if (g_CoopMode)
+        {
+            osSyncPrintf("GE_COOP: removing chr %d (slot %d, type %d, model %p, pass of player %d)\n",
+                         (int)chr->chrnum, (int)(chr - g_ChrSlots), (int)prop->type, (void *)chr->model,
+                         get_cur_playernum() + 1);
+        }
+#endif
         chrpropCleanupForRemoval(prop);
         return TICKOP_FREE;
     }
@@ -2690,6 +2703,12 @@ s32 chrTick(PropRecord *prop)
     }
 
 after_position_update:
+#ifdef PORT
+    if (!simowner)
+    {
+        chr->prevpos = savedprevpos;
+    }
+#endif
     if (((chr->actiontype != ACT_STAND) || (model->anim2 != NULL)) || (prop->type == PROP_TYPE_VIEWER))
     {
         chr->hidden |= CHRHIDDEN_BACKGROUND_AI;
