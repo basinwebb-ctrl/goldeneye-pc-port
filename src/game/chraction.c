@@ -2591,7 +2591,11 @@ bool handles_shot_actors(ChrRecord *self, s32 hitpart, coord3d *vector, s32 weap
 
         damageToCause = gunItemGetDestructionAmount(weaponid);
 
+#ifdef PORT
+        if (isPlayer && (isSoloRules()))
+#else
         if (isPlayer && (getPlayerCount() == 1))
+#endif
         {
             damageToCause *= g_AiHealthModifier;
         }
@@ -9601,9 +9605,16 @@ void chrlvActionTick(ChrRecord *self)
  * so it does not flip between two players standing side by side. */
 static u8 s_CoopChrTarget[512];
 
+/* Guard IDs (chrnum) are not unique, so key per-guard state by chr slot. */
+static s32 coopChrSlot(ChrRecord *self)
+{
+    extern ChrRecord *g_ChrSlots;
+    return (s32)(self - g_ChrSlots) & 511;
+}
+
 static s32 coopPickTargetPlayer(ChrRecord *self)
 {
-    s32 slot = self->chrnum & 511;
+    s32 slot = coopChrSlot(self);
     s32 prev = s_CoopChrTarget[slot];
     s32 best = -1;
     f32 bestdist = 0.0f;
@@ -9657,9 +9668,27 @@ static s32 coopPickTargetPlayer(ChrRecord *self)
     return best;
 }
 
+/* Co-op debugging: action ticks of one watched guard (by chr slot), compared
+ * with frames in lv.c's once-a-second log (should be 1 per frame, as in solo). */
+s32 g_CoopWatchChr = -1;
+s32 g_CoopWatchTicks = 0;
+
 void chrlvActionTick(ChrRecord *self)
 {
     s32 saved;
+
+    if (g_CoopMode)
+    {
+        if (g_CoopWatchChr < 0)
+        {
+            g_CoopWatchChr = coopChrSlot(self);
+        }
+
+        if (coopChrSlot(self) == g_CoopWatchChr)
+        {
+            g_CoopWatchTicks++;
+        }
+    }
 
     if (!g_CoopMode || self->prop == NULL || getPlayerCount() < 2)
     {

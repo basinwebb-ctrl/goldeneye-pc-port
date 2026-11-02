@@ -7,7 +7,7 @@
 cd "$(dirname "$0")"
 LEVEL=${1:-33}
 SECS=${COOP_SECS:-60}
-DUMP=${COOP_DUMP:-80-600:40}
+DUMP=${COOP_DUMP:-80-1760:120}
 OUT=coop-test
 
 echo "=== Rebuilding ==="
@@ -20,12 +20,15 @@ pkill -x ge007.aarch64 2>/dev/null; sleep 1
 
 # Player 2 walks forward. This port runs the "natural look" control style,
 # where the analog stick looks and D-pad/C-up walks, so hold D-pad up by
-# re-pulsing it (button tokens last 6 reads; 64 entries max).
-P2SCRIPT=$(seq 200 6 578 | sed 's/$/:UP/' | paste -sd';')
+# re-pulsing it (button tokens last 6 reads; 64 entries max). Later it
+# taps fire (Z), which also rejoins after being knocked out.
+P2SCRIPT=$( { seq 200 6 398 | sed 's/$/:UP/'; seq 1000 20 1580 | sed 's/$/:Z/'; } | paste -sd';')
+# Death rules: knock out player 2, let it rejoin, then knock out both.
+KILL=${COOP_KILL-2@700,1@2400,2@2400}
 
 echo "=== Running level $LEVEL with 2 players (up to ${SECS}s) ==="
 MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 \
-GE_COOP=1 GE_MPVIRT=1 GE_PCDUMP="$DUMP" \
+GE_COOP=1 GE_MPVIRT=1 GE_PCDUMP="$DUMP" GE_COOP_KILL="$KILL" \
 GE_INPUTSCRIPT_P1="$P2SCRIPT" \
   ./build-pc/ge007.aarch64 -level_$LEVEL > "$OUT/game.log" 2>&1 &
 pid=$!
@@ -47,7 +50,9 @@ rm -rf ppm
 {
   echo "level=$LEVEL seconds=$waited still_running=$alive screenshots=$frames"
   grep -m1 'GE_COOP' "$OUT/game.log" || echo "GE_COOP line: MISSING (switch not active?)"
-  grep -m3 -E 'D416 split|spawns at' "$OUT/game.log"
+  grep -m3 -E 'D416 split|spawns' "$OUT/game.log"
+  grep -E 'knocks out|rejoins|all players down' "$OUT/game.log"
+  echo "guard speed (ticks per frame, should be about 1): $(grep -E 'guard -?[0-9]+ ticks=' "$OUT/game.log" | sed -n '5,$p' | awk -F'ticks=| frames=' '{t+=$2; f+=$3} END {if (f) printf "%.2f", t/f; else print "n/a"}')"
   echo "guard target switches: $(grep -c 'now targets player' "$OUT/game.log")"
   grep -E 'GE_COOP t=' "$OUT/game.log" | head -2
   grep -E 'GE_COOP t=' "$OUT/game.log" | tail -2

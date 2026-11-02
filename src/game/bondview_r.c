@@ -76,6 +76,47 @@ u32 weaponLoadProjectileModels(ITEM_IDS modelid)
     return 0;
 }
 
+#ifdef PORT
+/* Co-op: find a free spot about one stride beside (or behind) a point that
+ * faces look_angle, reachable over the floor from it (no walls or drops).
+ * `seed` rotates which offset is tried first so several players spread out.
+ * Returns FALSE when no offset works. */
+s32 coopFindSpotBeside(f32 base_x, f32 base_z, StandTile *base_tile, f32 look_angle, s32 seed,
+                       f32 *out_x, f32 *out_z, StandTile **out_tile)
+{
+    static const f32 offsets[][2] = { /* {right, forward} */
+        { 120.0f, 0.0f }, { -120.0f, 0.0f }, { 0.0f, -120.0f },
+        { 120.0f, -120.0f }, { -120.0f, -120.0f }, { 0.0f, -240.0f },
+    };
+    f32 fwd_x = -sinf(look_angle);
+    f32 fwd_z = cosf(look_angle);
+    s32 n;
+
+    if (base_tile == NULL)
+    {
+        return FALSE;
+    }
+
+    for (n = 0; n < ARRAYCOUNT(offsets); n++)
+    {
+        s32 k = (n + seed) % ARRAYCOUNT(offsets);
+        f32 x = base_x + offsets[k][0] * fwd_z + offsets[k][1] * fwd_x;
+        f32 z = base_z - offsets[k][0] * fwd_x + offsets[k][1] * fwd_z;
+        StandTile *tile = base_tile;
+
+        if (walkTilesBetweenPoints_NoCallback(&tile, base_x, base_z, x, z) && tile)
+        {
+            *out_x = x;
+            *out_z = z;
+            *out_tile = tile;
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+#endif
+
 void bondviewLoadSetupIntroSection(void)
 {
 
@@ -503,36 +544,22 @@ void bondviewLoadSetupIntroSection(void)
 
 #ifdef PORT
         /* Co-op: solo stages have one start pad, so every player would spawn
-         * inside player 1. Move the others beside or behind it, keeping the
-         * first spot the floor reaches from the pad (no walls or drops). */
+         * inside player 1. Stand the others beside it instead. */
         if (g_CoopMode && get_cur_playernum() > 0)
         {
-            static const f32 offsets[][2] = { /* {right, forward} */
-                { 120.0f, 0.0f }, { -120.0f, 0.0f }, { 0.0f, -120.0f },
-                { 120.0f, -120.0f }, { -120.0f, -120.0f }, { 0.0f, -240.0f },
-            };
-            f32 fwd_x = -sinf(start_look_angle);
-            f32 fwd_z = cosf(start_look_angle);
-            s32 n;
+            f32 x, z;
+            StandTile *tile;
 
-            for (n = 0; n < ARRAYCOUNT(offsets); n++)
+            if (coopFindSpotBeside(start_pos.f[0], start_pos.f[2], start_stan, start_look_angle,
+                                   get_cur_playernum() - 1, &x, &z, &tile))
             {
-                s32 k = (n + get_cur_playernum() - 1) % ARRAYCOUNT(offsets);
-                f32 x = start_pos.f[0] + offsets[k][0] * fwd_z + offsets[k][1] * fwd_x;
-                f32 z = start_pos.f[2] - offsets[k][0] * fwd_x + offsets[k][1] * fwd_z;
-                StandTile *tile = start_stan;
-
-                if (walkTilesBetweenPoints_NoCallback(&tile, start_pos.f[0], start_pos.f[2], x, z) && tile)
-                {
-                    start_pos.f[0] = x;
-                    start_pos.f[2] = z;
-                    start_stan = tile;
-                    stan_height = bondviewYPositionRelated(start_stan, x, z);
-                    start_pos.f[1] = g_CurrentPlayer->eyeheight + stan_height;
-                    g_CurrentPlayer->field_70 = stan_height;
-                    osSyncPrintf("GE_COOP: player %d spawns at offset %d\n", get_cur_playernum() + 1, k);
-                    break;
-                }
+                start_pos.f[0] = x;
+                start_pos.f[2] = z;
+                start_stan = tile;
+                stan_height = bondviewYPositionRelated(start_stan, x, z);
+                start_pos.f[1] = g_CurrentPlayer->eyeheight + stan_height;
+                g_CurrentPlayer->field_70 = stan_height;
+                osSyncPrintf("GE_COOP: player %d spawns beside player 1\n", get_cur_playernum() + 1);
             }
         }
 #endif

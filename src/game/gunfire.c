@@ -3634,14 +3634,22 @@ void gunTickHandState(enum GUNHAND hand, s32 triggerOn)
     sp188 = WHEN_5_SP188_INIT;
     if (handptr->weapon_action_state == GUN_ANIM_STATE_SWITCH_LOWER)
     {
+#ifdef PORT
+        if (isMpMatch())
+#else
         if (getPlayerCount() >= 2)
+#endif
         {
             sp188 = WHEN_5_SP188_MULTI;
         }
 
         if (handptr->field_88C == 0)
         {
+#ifdef PORT
+            if (isSoloRules())
+#else
             if (getPlayerCount() == 1)
+#endif
             {
                 handptr->field_8B0 = WHEN_5_FLD8B0_SP;
             }
@@ -3743,7 +3751,11 @@ void gunTickHandState(enum GUNHAND hand, s32 triggerOn)
     {
         sp178 = WHEN_8_SP178_INIT;
 
+#ifdef PORT
+        if (isMpMatch())
+#else
         if (getPlayerCount() >= 2)
+#endif
         {
             sp178 = WHEN_8_SP178_MULTI;
         }
@@ -6719,7 +6731,11 @@ void increment_num_kills_display_text_in_MP(void)
     g_playerPerm->kill_count += 1;
     g_CurrentPlayer->kills_this_life += 1;
 
+#ifdef PORT
+    if (isSoloRules()) { return; }
+#else
     if (getPlayerCount() < 2) { return; }
+#endif
 
     mission_time = getMissiontimer();
     sprintf(&buffer, aSD, langGet(getStringID(LGUN, GUN_STR_DA_KILLCOUNT)), g_playerPerm->kill_count); // "kill count"
@@ -6789,7 +6805,11 @@ void increment_num_deaths(void)
 {
 	char buffer[256];
     g_CurrentPlayer->deathcount = (s32) (g_CurrentPlayer->deathcount + 1);
+#ifdef PORT
+    if (isMpMatch())
+#else
     if (getPlayerCount() >= 2)
+#endif
     {
         if (g_CurrentPlayer->deathcount == 1)
         {
@@ -6819,7 +6839,11 @@ void increment_num_suicides_display_MP(void) {
     s32 currentTime;
 
     g_CurrentPlayer->num_suicides += 1;
+#ifdef PORT
+    if (isMpMatch()) {
+#else
     if (getPlayerCount() >= 2) {
+#endif
 
         currentTime = getMissiontimer();
 

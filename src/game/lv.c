@@ -40,6 +40,7 @@
 #include "objective.h"
 #include "mpmenu.h"
 #include "vtxstore.h"
+#include "file.h"
 #include "initunk_005450.h"
 #include "initobjects.h"
 #include "initguards.h"
@@ -517,6 +518,25 @@ void lvlStageLoad(s32 stage)
         // HACK: This method call is wrong. The function takes one argument, but the asm calls it without
         // any arguments here.
         init_watch_at_start_of_stage();
+
+#ifdef PORT
+        /* Co-op: the line above loads the save file's options (sight, aim,
+         * look, ammo display...) into player 1 only. Give the other players
+         * the same options so everyone plays with the solo settings. */
+        if (g_CoopMode)
+        {
+            s32 saved = get_cur_playernum();
+            s32 p;
+
+            for (p = 1; p < getPlayerCount(); p++)
+            {
+                set_cur_player(p);
+                fileLoadSaveSettingsForSelectedFolder(stage);
+            }
+
+            set_cur_player(saved);
+        }
+#endif
 
         sub_GAME_7F0C11FC(stage);
 
@@ -1103,10 +1123,50 @@ void lvlManageMpGame(void)
         extern void d318WatchdogTick(void);
         d318WatchdogTick(); /* D318/D320 pin detector, log-only since D329 (findings D318) */
     }
+    static s32 coopframes = 0;
+
+    /* Co-op test harness: GE_COOP_KILL="2@700,1@2400" knocks player 2 out at
+     * tick 700 and player 1 at tick 2400, to exercise the death rules. */
+    if (g_CoopMode && getenv("GE_COOP_KILL"))
+    {
+        const char *k = getenv("GE_COOP_KILL");
+
+        while (*k)
+        {
+            char *end;
+            s32 who = strtol(k, &end, 10) - 1;
+            s32 when = (*end == '@') ? strtol(end + 1, &end, 10) : -1;
+
+            if (who >= 0 && who < getPlayerCount() && when >= 0
+                && g_GlobalTimer >= when && g_GlobalTimer - g_ClockTimer < when
+                && !g_playerPointers[who]->bonddead)
+            {
+                s32 saved = get_cur_playernum();
+
+                osSyncPrintf("GE_COOP: test knocks out player %d at t=%d\n", (int)who + 1, (int)g_GlobalTimer);
+                set_cur_player(who);
+                record_damage_kills(100.0f, 0.0f, 0.0f, who, 0);
+                set_cur_player(saved);
+            }
+
+            k = (*end == ',') ? end + 1 : end;
+            if (end == k && *k) k++;   /* skip junk */
+        }
+    }
     /* Co-op debugging: log every player's state about once a second. */
+    if (g_CoopMode)
+    {
+        coopframes++;
+    }
     if (g_CoopMode && (g_GlobalTimer / 60) != ((g_GlobalTimer - g_ClockTimer) / 60))
     {
+        extern s32 g_CoopWatchChr, g_CoopWatchTicks;
         s32 i;
+
+        osSyncPrintf("GE_COOP t=%d guard %d ticks=%d frames=%d\n", (int)g_GlobalTimer,
+                     (int)g_CoopWatchChr, (int)g_CoopWatchTicks, (int)coopframes);
+        g_CoopWatchTicks = 0;
+        coopframes = 0;
         for (i = 0; i < getPlayerCount(); i++)
         {
             struct player *pl = g_playerPointers[i];

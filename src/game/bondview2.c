@@ -1728,7 +1728,11 @@ void currentPlayerSetYAutoAimEnabled(bool enabled)
  */
 bool currentPlayerGetYAutoAimEnabled(void)
 {
+#ifdef PORT
+    if (isSoloRules())
+#else
     if (getPlayerCount() == 1)
+#endif
     {
         return g_CurrentPlayer->autoyaimenabled;
     }
@@ -1792,7 +1796,11 @@ void currentPlayerSetXAutoAimEnabled(bool enabled)
  */
 bool currentPlayerGetXAutoAimEnabled(void)
 {
+#ifdef PORT
+    if (isSoloRules())
+#else
     if (getPlayerCount() == 1)
+#endif
     {
         return g_CurrentPlayer->autoxaimenabled;
     }
@@ -5592,7 +5600,11 @@ void bondviewProcessInput(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
         moveData.speedVertaUp = ftemp_nostack_spE8;
     }
 
+#ifdef PORT
+    if (bondviewGetIfCurrentPlayerDamageShowTime() && isSoloRules())
+#else
     if (bondviewGetIfCurrentPlayerDamageShowTime() && getPlayerCount() == 1)
+#endif
     {
         moveData.triggerOn = 0;
     }
@@ -8177,8 +8189,13 @@ void bondviewMovePlayerUpdateViewport(s8 stick_x, s8 stick_y, u16 buttons)
 
     gunSetSightVisible(
         GUNSIGHTREASON_1,
+#ifdef PORT
+        (isSoloRules() && cur_player_get_sight_onscreen_control())
+            || (isMpMatch() && g_playerPerm->sight)
+#else
         (getPlayerCount() == 1 && cur_player_get_sight_onscreen_control())
             || (getPlayerCount() >= 2 && g_playerPerm->sight)
+#endif
     );
 
 #if defined(VERSION_EU)
@@ -8904,6 +8921,45 @@ void mp_respawn_handler(void)
 
     start_look_angle = randomGetNext() * 2.3283064e-10f * 6.2831855f;
 
+#ifdef PORT
+    /* Co-op: rejoin beside a living partner, facing the same way, instead
+     * of at the mission's start pad (often far behind by now). */
+    if (g_CoopMode)
+    {
+        extern s32 coopFindSpotBeside(f32 base_x, f32 base_z, StandTile *base_tile, f32 look_angle, s32 seed,
+                                      f32 *out_x, f32 *out_z, StandTile **out_tile);
+        s32 i;
+
+        for (i = 0; i < getPlayerCount(); i++)
+        {
+            struct player *mate = g_playerPointers[i];
+            f32 mate_angle, x, z;
+            StandTile *tile;
+
+            if (i == get_cur_playernum() || mate == NULL || mate->prop == NULL || mate->bonddead)
+            {
+                continue;
+            }
+
+            mate_angle = mate->vv_theta * 6.2831855f / 360.0f;
+
+            if (coopFindSpotBeside(mate->prop->pos.x, mate->prop->pos.z, mate->prop->stan, mate_angle,
+                                   get_cur_playernum(), &x, &z, &tile))
+            {
+                start_pos.x = x;
+                start_pos.z = z;
+                start_stan = (s32)(uintptr_t)tile;
+                stan_height = bondviewYPositionRelated(tile, x, z);
+                start_pos.y = g_CurrentPlayer->eyeheight + stan_height;
+                g_CurrentPlayer->field_70 = stan_height;
+                start_look_angle = mate_angle;
+                osSyncPrintf("GE_COOP: player %d rejoins beside player %d\n", get_cur_playernum() + 1, i + 1);
+                break;
+            }
+        }
+    }
+#endif
+
     g_CurrentPlayer->vv_theta = (f32) ((start_look_angle * 360.0f) / 6.2831855f);
     g_CurrentPlayer->stanHeight = stan_height;
 #if defined(VERSION_EU)
@@ -9462,6 +9518,34 @@ Gfx *maybe_mp_interface(Gfx *gdl)
                         {
                             total += g_playerPlayerData[i].kill_counts[cur];
                         }
+#ifdef PORT
+                        /* Co-op: the mission fails once every player is down
+                         * at the same time; until then a downed player
+                         * presses fire to rejoin beside a partner. */
+                        if (g_CoopMode)
+                        {
+                            s32 down = 0;
+
+                            for (i = 0; i < count; i++)
+                            {
+                                if (g_playerPointers[i]->bonddead && g_playerPointers[i]->deathanimfinished)
+                                {
+                                    down++;
+                                }
+                            }
+
+                            if (down == count)
+                            {
+                                osSyncPrintf("GE_COOP: all players down, mission failed\n");
+                                bossRunTitleStage();
+                            }
+                            else if (joyGetButtons(get_cur_playernum(), 0xB000))
+                            {
+                                mp_respawn_handler();
+                            }
+                        }
+                        else
+#endif
                         if ((scenario != SCENARIO_YOLT) || (total < 2))
                         {
                             if (joyGetButtons(get_cur_playernum(), 0xB000))

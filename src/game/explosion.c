@@ -654,7 +654,11 @@ void explosionInflictDamage(PropRecord *arg0, f32 horiz_range, f32 vert_range)
                             sp90 = get_cur_playernum();
                             set_cur_player(getPlayerPointerIndex(temp_s0));
 
+#ifdef PORT
+                            if (isSoloRules())
+#else
                             if (getPlayerCount() == 1)
+#endif
                             {
                                 minfrac *= g_SpExplosionDamageMult;
                             }
@@ -1815,7 +1819,11 @@ void explosionScorchTick(struct coord3d *pos, f32 explosion_size, s16 room)
 
     temp_s0 = getRoomPositionByIndex((s32) room);
 
+#ifdef PORT
+    if (isSoloRules())
+#else
     if (getPlayerCount() < 2)
+#endif
     {
         if (explosion_size > 200.0f)
         {

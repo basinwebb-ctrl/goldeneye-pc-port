@@ -98,6 +98,7 @@ s32 getPlayerCount(void);
 #ifdef PORT
 extern s32 g_CoopMode;
 s32 isMpMatch(void);
+s32 isSoloRules(void);
 #endif
 void set_cur_player_screen_size(u32 width, u32 height);
 void set_cur_player_viewport_size(u32 ulx, u32 uly);

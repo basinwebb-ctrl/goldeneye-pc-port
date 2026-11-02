@@ -127,6 +127,15 @@ s32 isMpMatch(void)
 {
     return getPlayerCount() >= 2 && !g_CoopMode;
 }
+
+/* True when single-player gameplay rules apply: one player, or co-op (solo
+ * missions keep their difficulty, ammo, aim and weapon rules). Use this
+ * instead of getPlayerCount() == 1 where the check picks rules rather than
+ * the screen layout. */
+s32 isSoloRules(void)
+{
+    return getPlayerCount() == 1 || g_CoopMode;
+}
 #endif
 
 void initBONDdataforPlayer(s32 player_num)

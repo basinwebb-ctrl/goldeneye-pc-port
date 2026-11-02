@@ -2471,6 +2471,9 @@ s32 chrTick(PropRecord *prop)
 #endif
     s32 headVisible;
     s32 tickamount;
+#ifdef PORT
+    s32 simowner;
+#endif
 
     renderdata = D_8002CC6C;
     chr = prop->chr;
@@ -2480,6 +2483,16 @@ s32 chrTick(PropRecord *prop)
 
 #ifdef PORT
     d193aSample(chr, model);
+
+    /* Co-op: propsTick runs once per player's view, so with 2 players a
+     * guard would think, move and animate twice a frame (double speed).
+     * Only the first player's pass advances the guard; the others just
+     * position and draw it, like objTick's isSimOwner. */
+    simowner = !g_CoopMode || get_player_position_in_shuffled(get_cur_playernum()) == 0;
+    if (!simowner)
+    {
+        tickamount = 0;
+    }
 #endif
 
     if ((!(chr->chrflags & CHRFLAG_HIDDEN)) || (chr->chrflags & CHRFLAG_00040000))
@@ -2507,6 +2520,9 @@ s32 chrTick(PropRecord *prop)
             }
         }
         else
+#ifdef PORT
+        if (simowner)
+#endif
         {
             chrlvActionTick(chr);
 
@@ -2734,7 +2750,11 @@ after_position_update:
 
         if (g_CurModelChr->flinchcnt >= 0)
         {
+#ifdef PORT
+            g_CurModelChr->flinchcnt += simowner ? g_ClockTimer : 0;
+#else
             g_CurModelChr->flinchcnt += g_ClockTimer;
+#endif
 
 #ifdef VERSION_EU
                if (g_CurModelChr->flinchcnt >= 24)

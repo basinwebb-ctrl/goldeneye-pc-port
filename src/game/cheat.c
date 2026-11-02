@@ -817,7 +817,11 @@ void cheatTryActivateFromInputBuffer(void)
     }
     else
     {
+#ifdef PORT
+        applicableMask = (isSoloRules()) ? CHEAT_MASK_SPGAME : CHEAT_MASK_MPGAME;
+#else
         applicableMask = (getPlayerCount() == 1) ? CHEAT_MASK_SPGAME : CHEAT_MASK_MPGAME;
+#endif
     }
 
     // Iterate through all cheats until one is activated or all are checked
