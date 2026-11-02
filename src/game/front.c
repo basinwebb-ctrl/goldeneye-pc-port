@@ -2908,7 +2908,13 @@ void interface_menu06_modesel(void)
             sndPlaySfx(g_musicSfxBufferPtr, DOOR_METAL_CLOSE2_SFX, 0);
         }
     }
+#ifdef PORT
+    /* PORT: "Co-op Missions" is row 3 (solo missions with 2 players, needs a
+     * second controller like Multiplayer); Cheat Options moves to row 4. */
+    else if ((is_cheat_menu_available) && (307.0f <= cursor_v_pos))
+#else
     else if ((is_cheat_menu_available) && (275.0f <= cursor_v_pos))
+#endif
     {
         mission_difficulty_highlighted = DIFFICULTY_00;
         if (joyGetButtonsPressedThisFrame(PLAYER_1, START_BUTTON|Z_TRIG|A_BUTTON))
@@ -2917,12 +2923,27 @@ void interface_menu06_modesel(void)
             sndPlaySfx(g_musicSfxBufferPtr, DOOR_METAL_CLOSE_SFX, 0);
         }
     }
+#ifdef PORT
+    else if ((275.0f <= cursor_v_pos) && (joyGetControllerCount() >= 2))
+    {
+        mission_difficulty_highlighted = DIFFICULTY_007;
+        if (joyGetButtonsPressedThisFrame(PLAYER_1, START_BUTTON|Z_TRIG|A_BUTTON))
+        {
+            gamemode = GAMEMODE_SOLO;
+            g_CoopRequested = TRUE;
+            sndPlaySfx(g_musicSfxBufferPtr, DOOR_METAL_CLOSE_SFX, 0);
+        }
+    }
+#endif
     else if ((243.0f <= cursor_v_pos) && (joyGetControllerCount() >= 2))
     {
         mission_difficulty_highlighted = DIFFICULTY_SECRET;
         if (joyGetButtonsPressedThisFrame(PLAYER_1, START_BUTTON|Z_TRIG|A_BUTTON))
         {
             gamemode = GAMEMODE_MULTI;
+#ifdef PORT
+            g_CoopRequested = FALSE;
+#endif
             sndPlaySfx(g_musicSfxBufferPtr, DOOR_METAL_CLOSE_SFX, 0);
         }
     }
@@ -2932,6 +2953,9 @@ void interface_menu06_modesel(void)
         if (joyGetButtonsPressedThisFrame(PLAYER_1, START_BUTTON|Z_TRIG|A_BUTTON))
         {
             gamemode = GAMEMODE_SOLO;
+#ifdef PORT
+            g_CoopRequested = FALSE;
+#endif
             sndPlaySfx(g_musicSfxBufferPtr, DOOR_METAL_CLOSE_SFX, 0);
         }
     }
@@ -3087,20 +3111,43 @@ Gfx* constructor_menu06_modesel(Gfx* DL)
     }
     DL = frontPrintText(DL, &x, &y, textstring, ptrFontZurichBoldChars, ptrFontZurichBold, text_color, viGetX(), viGetY(), 0, 0);
 
+#ifdef PORT
+    /* Row 3: Co-op Missions (same colouring rule as Multiplayer). */
+    x = 0x96;
+    y = 0x11C;
+    DL = frontPrintText(DL, &x, &y, "3.\n", ptrFontZurichBoldChars, ptrFontZurichBold, text_color, viGetX(), viGetY(), 0, 0);
+    textstring = "Co-op Missions\n";
+    textMeasure(&x2, &y2, textstring, ptrFontZurichBoldChars, ptrFontZurichBold, 0);
+    x = 0xAA;
+    y = 0x11C;
+    if (mission_difficulty_highlighted == DIFFICULTY_007)
+    {
+        DL = microcode_constructor_related_to_menus(DL, 0x94, 0x11A, y2 + 0xAF, 0x12A, 0x32);
+    }
+    DL = frontPrintText(DL, &x, &y, textstring, ptrFontZurichBoldChars, ptrFontZurichBold, text_color, viGetX(), viGetY(), 0, 0);
+#endif
+
     if (is_cheat_menu_available != 0)
     {
+#ifdef PORT
+        const s32 row = 0x13C;   /* row 4, below Co-op Missions */
+        const char *num = "4.\n";
+#else
+        const s32 row = 0x11C;
+        const char *num = "3.\n";
+#endif
         x = 0x96;
-        y = 0x11C;
-        DL = frontPrintText(DL, &x, &y, "3.\n", ptrFontZurichBoldChars, ptrFontZurichBold, 0xFF, viGetX(), viGetY(), 0, 0);
+        y = row;
+        DL = frontPrintText(DL, &x, &y, (char *)num, ptrFontZurichBoldChars, ptrFontZurichBold, 0xFF, viGetX(), viGetY(), 0, 0);
         textstring = langGet(getStringID(LTITLE, TITLE_STR_31_CHEATOPTIONS));
 
         textMeasure(&x2, &y2, textstring, ptrFontZurichBoldChars, ptrFontZurichBold, 0);
 
         x = 0xAA;
-        y = 0x11C;
+        y = row;
         if (mission_difficulty_highlighted == 2)
         {
-            DL = microcode_constructor_related_to_menus(DL, 0x94, 0x11A, y2 + 0xAF, 0x12A, 0x32);
+            DL = microcode_constructor_related_to_menus(DL, 0x94, row - 2, y2 + 0xAF, row + 14, 0x32);
         }
         DL = frontPrintText(DL, &x, &y, textstring, ptrFontZurichBoldChars, ptrFontZurichBold, 0xFF, viGetX(), viGetY(), 0, 0);
     }

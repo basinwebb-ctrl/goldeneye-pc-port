@@ -537,10 +537,10 @@ void bossMainloop(void)
                 localSelectedNumPlayers = get_selected_num_players();
             }
 #ifdef PORT
-            /* Co-op story prototype (phase 1): GE_COOP=1 loads solo missions
-             * with a second player so we can see which solo-only systems
-             * break. Not used without the env var. */
-            else if (gamemode == GAMEMODE_SOLO && getenv("GE_COOP") && atoi(getenv("GE_COOP")) > 0)
+            /* Co-op story: "Co-op Missions" in the mode-select menu (or
+             * GE_COOP=1) loads solo missions with a second player. */
+            else if (gamemode == GAMEMODE_SOLO
+                     && (g_CoopRequested || (getenv("GE_COOP") && atoi(getenv("GE_COOP")) > 0)))
             {
                 localSelectedNumPlayers = 2;
                 g_CoopMode = 1;

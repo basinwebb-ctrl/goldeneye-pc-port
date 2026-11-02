@@ -97,6 +97,7 @@ void set_cur_player(s32 playernum);
 s32 getPlayerCount(void);
 #ifdef PORT
 extern s32 g_CoopMode;
+extern s32 g_CoopRequested;
 s32 isMpMatch(void);
 s32 isSoloRules(void);
 #endif

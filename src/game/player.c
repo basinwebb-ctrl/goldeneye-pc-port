@@ -120,6 +120,10 @@ s32 getPlayerCount(void)
  * its solo setup, props and rules. */
 s32 g_CoopMode = 0;
 
+/* Set from the front end's "Co-op Missions" choice: the next solo missions
+ * load with 2 players (GE_COOP=1 does the same for testing). */
+s32 g_CoopRequested = 0;
+
 /* True for a real multiplayer match: several players and not co-op. Use
  * this instead of getPlayerCount() >= 2 where the check picks MP content
  * or rules rather than split-screen rendering. */
